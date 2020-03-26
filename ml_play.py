@@ -26,6 +26,15 @@ def ml_loop():
     # 2. Inform the game process that ml process is ready before start the loop.
     comm.ml_ready()
 
+    expect_x = 100
+    #vector = [1, 1]
+    vector_x = 1
+    vector_y = 1
+    pass_down = False
+    pass_up = False
+    l = 0
+    w = 0
+
     # 3. Start an endless loop.
     while True:
         # 3.1. Receive the scene information sent from the game process.
@@ -46,7 +55,58 @@ def ml_loop():
 
         # 3.4. Send the instruction for this frame to the game process
         if not ball_served:
-            comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_LEFT)
+            comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_RIGHT)
             ball_served = True
         else:
-            comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+            ball_up_x = 0
+            ball_up_y = 0
+            ball_down_x = 0
+            ball_down_y = 0
+            ball_x = scene_info.ball[0]
+            ball_y = scene_info.ball[1]
+            platform_x = scene_info.platform[0]
+            l = scene_info.platform[1]
+
+           
+            if ball_y < 135 and ball_y >= 125: #up
+                ball_up_x = ball_x
+                ball_up_y = ball_y
+                pass_up = True
+                
+            if ball_y < 145 and ball_y >= 135 and pass_up == True: #down
+                ball_down_x = ball_x
+                ball_down_y = ball_y
+                pass_down = True
+                
+            #if ball_down_x - ball_up_x > 0: #right
+
+            if pass_up == True and pass_down == True:
+                vector_x = ball_down_x-ball_up_x
+                vector_y = ball_down_y-ball_up_y
+                expect_x = ((400 - ball_down_y)/(vector_y)) *vector_x + ball_down_x
+                while expect_x < 0 or expect_x > 200:
+                    if expect_x < 0:
+                        expect_x = -expect_x
+                    elif expect_x > 200:
+                        expect_x = 400 - expect_x
+                pass_up = False
+                pass_down = False
+
+            if expect_x >= platform_x+20 and expect_x <=platform_x+30:
+                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+            elif expect_x < platform_x+20: 
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+            elif expect_x > platform_x+30:
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
+            else:
+                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+            
+
+            """
+            if ball_x < platform_x: 
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+            elif ball_x > platform_x:
+                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
+            else:
+                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+            """
