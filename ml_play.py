@@ -7,6 +7,19 @@ from games.arkanoid.communication import ( \
     SceneInfo, GameStatus, PlatformAction
 )
 
+def predict(x, l_x, y, l_y):
+    m = (y - l_y)/(x - l_x)
+    predict_x = (395 - y)/m + x
+    for i in range(10):
+        if (predict_x > 195):
+            predict_x = 390 - predict_x
+        elif (predict_x < 0):
+            predict_x = 0 - predict_x
+        else:
+            break
+    return predict_x
+
+
 def ml_loop():
     """
     The main loop of the machine learning process
@@ -22,18 +35,10 @@ def ml_loop():
     # === Here is the execution order of the loop === #
     # 1. Put the initialization code here.
     ball_served = False
-
+    last_x = 75
+    last_y = 400
     # 2. Inform the game process that ml process is ready before start the loop.
     comm.ml_ready()
-
-    expect_x = 100
-    #vector = [1, 1]
-    vector_x = 1
-    vector_y = 1
-    pass_down = False
-    pass_up = False
-    l = 0
-    w = 0
 
     # 3. Start an endless loop.
     while True:
@@ -52,61 +57,27 @@ def ml_loop():
             continue
 
         # 3.3. Put the code here to handle the scene information
-
+        (ball_x,ball_y) = scene_info.ball
+        platform_x = scene_info.platform[0]
         # 3.4. Send the instruction for this frame to the game process
         if not ball_served:
-            comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_RIGHT)
-            ball_served = True
+                comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_LEFT)
+                ball_served = True
         else:
-            ball_up_x = 0
-            ball_up_y = 0
-            ball_down_x = 0
-            ball_down_y = 0
-            ball_x = scene_info.ball[0]
-            ball_y = scene_info.ball[1]
-            platform_x = scene_info.platform[0]
-            l = scene_info.platform[1]
-
-           
-            if ball_y < 135 and ball_y >= 125: #up
-                ball_up_x = ball_x
-                ball_up_y = ball_y
-                pass_up = True
-                
-            if ball_y < 145 and ball_y >= 135 and pass_up == True: #down
-                ball_down_x = ball_x
-                ball_down_y = ball_y
-                pass_down = True
-                
-            #if ball_down_x - ball_up_x > 0: #right
-
-            if pass_up == True and pass_down == True:
-                vector_x = ball_down_x-ball_up_x
-                vector_y = ball_down_y-ball_up_y
-                expect_x = ((400 - ball_down_y)/(vector_y)) *vector_x + ball_down_x
-                while expect_x < 0 or expect_x > 200:
-                    if expect_x < 0:
-                        expect_x = -expect_x
-                    elif expect_x > 200:
-                        expect_x = 400 - expect_x
-                pass_up = False
-                pass_down = False
-
-            if expect_x >= platform_x+20 and expect_x <=platform_x+30:
-                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
-            elif expect_x < platform_x+20: 
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif expect_x > platform_x+30:
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            else:
-                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
-            
-
-            """
-            if ball_x < platform_x: 
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
-            elif ball_x > platform_x:
-                comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
-            else:
-                comm.send_instruction(scene_info.frame, PlatformAction.NONE)
-            """
+                if (last_y - ball_y) < 0:
+                    x = predict(ball_x,last_x,ball_y,last_y)
+                    if x < (platform_x + 20):
+                        comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+                    elif x > (platform_x + 25):
+                        comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
+                    else:
+                        comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+                else:
+                    if ball_x < (platform_x + 20):
+                        comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
+                    elif ball_x > (platform_x + 25):
+                        comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
+                    else:
+                        comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+                last_x = ball_x
+                last_y = ball_y
