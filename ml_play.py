@@ -64,7 +64,8 @@ def ml_loop():
                 comm.send_instruction(scene_info.frame, PlatformAction.SERVE_TO_LEFT)
                 ball_served = True
         else:
-                if (last_y - ball_y) < 0 and ball_y > 350:
+                #if (last_y - ball_y) < 0 and ball_y > 350:
+                if ball_y>300: 
                     x = predict(ball_x,last_x,ball_y,last_y)
                     if x < (platform_x + 20):
                         comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
@@ -72,6 +73,7 @@ def ml_loop():
                         comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
                     else:
                         comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+                """
                 else:
                     if ball_x < (platform_x + 20):
                         comm.send_instruction(scene_info.frame, PlatformAction.MOVE_LEFT)
@@ -79,5 +81,6 @@ def ml_loop():
                         comm.send_instruction(scene_info.frame, PlatformAction.MOVE_RIGHT)
                     else:
                         comm.send_instruction(scene_info.frame, PlatformAction.NONE)
+                """
                 last_x = ball_x
                 last_y = ball_y
