@@ -22,11 +22,16 @@ def ml_loop(side: str):
     # === Here is the execution order of the loop === #
     # 1. Put the initialization code here
     ball_served = False
-    def move_to(player, pred) : #move platform to predicted position to catch ball 
+    def move_to(player, pred, frame) : #move platform to predicted position to catch ball 
         if player == '1P':
-            if scene_info["platform_1P"][0]+20  > (pred-10) and scene_info["platform_1P"][0]+20 < (pred+10): return 0 # NONE
-            elif scene_info["platform_1P"][0]+20 <= (pred-10) : return 1 # goes right
-            else : return 2 # goes left
+            if frame < 2 :
+                if scene_info["ball"][0]>0 : return 1
+                elif scene_info["ball"][0]<0 : return 2
+                else : return 0
+            else:
+                if scene_info["platform_1P"][0]+20  > (pred-10) and scene_info["platform_1P"][0]+20 < (pred+10): return 0 # NONE
+                elif scene_info["platform_1P"][0]+20 <= (pred-10) : return 1 # goes right
+                else : return 2 # goes left
         else :
             if scene_info["platform_2P"][0]+20  > (pred-10) and scene_info["platform_2P"][0]+20 < (pred+10): return 0 # NONE
             elif scene_info["platform_2P"][0]+20 <= (pred-10) : return 1 # goes right
@@ -47,15 +52,15 @@ def ml_loop(side: str):
                     pred = abs(pred - (bound+1) *200)
                 else :
                     pred = pred + (abs(bound)*200)
-            return move_to(player = '1P',pred = pred)
+            return move_to(player = '1P',pred = pred, frame = x)
         else : # ball goes up
-            return move_to(player = '1P',pred = 100)
+            return move_to(player = '1P',pred = 100, frame = 3)
 
 
 
     def ml_loop_for_2P():  # as same as 1P
         if scene_info["ball_speed"][1] > 0 : 
-            return move_to(player = '2P',pred = 100)
+            return move_to(player = '2P',pred = 100, frame = 10)
         else : 
             x = ( scene_info["platform_2P"][1]+30-scene_info["ball"][1] ) // scene_info["ball_speed"][1] 
             pred = scene_info["ball"][0]+(scene_info["ball_speed"][0]*x) 
@@ -70,7 +75,7 @@ def ml_loop(side: str):
                     pred = abs(pred - (bound+1) *200)
                 else :
                     pred = pred + (abs(bound)*200)
-            return move_to(player = '2P',pred = pred)
+            return move_to(player = '2P',pred = pred, frame = x)
 
     # 2. Inform the game process that ml process is ready
     comm.ml_ready()
